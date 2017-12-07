@@ -1,5 +1,5 @@
 {
-  "name": "crawler",
+  "name": "crawler-szp",
   "version": "1.0.0",
   "description": "crawler tool",
   "main": "index.js",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ShenZhenpeng/crawler"
+    "url": "git+https://github.com/ShenZhenpeng/crawler.git"
   },
   "keywords": [
     "crawler",
@@ -20,7 +20,9 @@
     "url": "https://github.com/ShenZhenpeng/crawler/issues"
   },
   "homepage": "https://github.com/ShenZhenpeng/crawler#readme",
-  "dependencies": {
-    
-  }
+  "dependencies": {},
+  "directories": {
+    "example": "example"
+  },
+  "devDependencies": {}
 }
