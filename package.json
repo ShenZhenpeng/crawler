@@ -20,7 +20,9 @@
     "url": "https://github.com/ShenZhenpeng/crawler/issues"
   },
   "homepage": "https://github.com/ShenZhenpeng/crawler#readme",
-  "dependencies": {},
+  "dependencies": {
+    "phantomjs-prebuilt": "^2.1.16"
+  },
   "directories": {
     "example": "example"
   },
