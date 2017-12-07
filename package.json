@@ -1,0 +1,26 @@
+{
+  "name": "crawler",
+  "version": "1.0.0",
+  "description": "crawler tool",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShenZhenpeng/crawler"
+  },
+  "keywords": [
+    "crawler",
+    "js"
+  ],
+  "author": "shenzp",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ShenZhenpeng/crawler/issues"
+  },
+  "homepage": "https://github.com/ShenZhenpeng/crawler#readme",
+  "dependencies": {
+    
+  }
+}
