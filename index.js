@@ -4,6 +4,7 @@
 
 var webPage = require('webpage'),
     system = require('system'),
+    $ = require("jquery"),
     Queue = require('./tools/queue');
     jQueryUrl = "http://oxfotmol6.bkt.clouddn.com/jquery-3.1.0/jquery-3.1.0.js";
 
@@ -20,19 +21,21 @@ function crawler() {
     this.urlQueue = new Queue();
     this.resultList = [];
 
-    self.getContent = function (obj, func) {
-        var url = obj.url,
-            next,
-            content;
+    /**
+     *
+     * @param obj  { url, next, handler, resultHandler }
+     * @param func
+     */
+    self.getContent = function (obj) {
+        var obj = $.extend(true, {}, obj);
 
-        next = paramToArray(obj['next']);
-        content = paramToArray(obj['content']);
+        obj['next'] = paramToArray(obj['next']);
 
-        if(typeof url !== "string") {
+        if(typeof obj.url !== "string") {
             console.error("parameter `url` need to be type of `string`");
             return;
         }
-        self.openAddress(url, next, content, func);
+        self.openAddress(obj);
     };
 
     self.ping = function(url) {
@@ -50,80 +53,108 @@ function crawler() {
         });
     };
 
-    self.openAddress = function(url, next, content, func) {
-        var contentObj = {
-            url: url,
-            next: next,
-            content: content,
-            value: []
-        };
-
-        page.open(url, function (status) {
+    self.openAddress = function(obj) {
+        page.open(obj.url, function (status) {
+            var result, urlInter, nextInter;
             console.log(status);
             if(status === "success") {
-                var result = page.evaluate(function (para) {
+                result = page.evaluate(function (para) {
+                    if(!$) {
+                        return false;
+                    }
+
                     var para = JSON.parse(para),
                         urlList = [],
-                        resultList = [];
+                        resultList = [],
+                        nextList = [],
+                        handler = function () { console.log("handler function is not defined!!!"); };
 
-                    function nextHandler(url, next) {
-                        next.forEach(function (item, i) {
+                    if(para.handler && typeof para.handler === "string") {
+                        eval(para.handler);
+                    }
+
+                    if(para.next) {
+                        para.next.forEach(function (item, i) {
                             if($(item).attr("href")) {
-                                urlList.push($(item).attr("href"));
+                                nextList.push($(item).attr("href"));
                             } else {
                                 console.log("address:\n", url, "\ndon't has `next` href by " + item)
                             }
                         });
                     }
 
-                    function resultHandler(url, content, value) {
-                        content.forEach(function (item, i) {
-                            if($(item).val()) {
-                                value.push($(item).val());
-                            } else if($(item).html()) {
-                                value.push($(item).html());
-                            } else {
-                                value.push(null);
-                                console.log("can not get content:\n", url, "\n", "content: ", content);
-                            }
-                            resultList.push(value);
-                        });
-                    }
-                    if($) {
-                        resultHandler(para.url, para.content, para.value);
-                        nextHandler(para.url, para.next);
-                        return JSON.stringify({
-                            resultList: resultList,
-                            urlList: urlList
-                        });
-                    } else {
-                        return false;
-                    }
-                }, JSON.stringify(contentObj));
+                    console.log("handler");
+                    handler();
+
+                    return JSON.stringify({
+                        resultList: resultList,
+                        urlList: urlList,
+                        nextList: nextList
+                    });
+                }, JSON.stringify(obj));
 
                 if(result !== "false") {
                     result = JSON.parse(result);
-                    contentObj.value = result.resultList;
-                    result.urlList.forEach(function (item, i) {
-                        self.urlQueue.push(item);
-                    });
-                    self.resultList.push(contentObj);
-                } else {
-                    page.includeJs(jQueryUrl, function() {
-                        if(func && typeof func === "function") {
-                            page.evaluate(func);
+                    result.urlQueue = new Queue();
+                    result.nextQueue = new Queue();
+
+                    if(obj.resultHandler && typeof obj.resultHandler === "function") {
+                        if(result.resultList instanceof Array) {
+                            obj.resultHandler(result.resultList);
                         } else {
-                            page.evaluate(function () {
-                                resultHandler(url, content, contentObj);
-                                nextHandler(url, next);
-                            });
+                            console.error("resultList need to be handler to be type of Array");
                         }
-                        // phantom.exit();
-                    });
+                    }
+
+                    if(result.urlList && obj.nextConfig) {
+                        result.urlList.forEach(function (item, i) {
+                            result.urlQueue.push(item);
+                        });
+                        urlInter = setInterval(function () {
+                            var url = result.urlQueue.pop();
+                            console.log("URL: ", url);
+                            if(url) {
+                                obj['nextConfig'].url = url;
+                                self.getContent(obj['nextConfig']);
+                            } else {
+                                clearInterval(urlInter);
+                            }
+                        }, 2000);
+                    }
+
+                    if(result.nextList) {
+                        result.nextList.forEach(function (item, i) {
+                            result.nextQueue.push(item);
+                        });
+                        nextInter = setInterval(function () {
+                            var url = result.nextQueue.pop();
+                            console.log("NEXT: ", url);
+                            if(url) {
+                                obj.url = url;
+                                self.getContent(obj);
+                            } else {
+                                clearInterval(nextInter);
+                            }
+                        }, 1000);
+                    }
+                } else {
+                    console.log("not find JQ");
+                    // page.includeJs(jQueryUrl, function() {
+                    //     if(func && typeof func === "function") {
+                    //         page.evaluate(func);
+                    //     } else {
+                    //         page.evaluate(function () {
+                    //             resultHandler(url, content, contentObj);
+                    //             nextHandler(url, next);
+                    //         });
+                    //     }
+                    //     // phantom.exit();
+                    // });
                 }
             } else {
-                console.error('FAIL to load the address\n', url);
+                console.error('FAIL to load the address\n', obj.url);
             }
+            phantom.exit();
         });
     };
 
